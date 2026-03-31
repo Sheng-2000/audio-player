@@ -16,3 +16,8 @@ Tue Mar 31 12:03:58 CST 2026 [2/17] 转写: 马可福音 1-21~28
   warnings.warn("FP16 is not supported on CPU; using FP32 instead")
 /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
   warnings.warn('resource_tracker: There appear to be %d '
+Tue Mar 31 12:09:10 CST 2026 重新开始转写...
+Tue Mar 31 12:09:10 CST 2026 [0/16] 转写: 马可福音 1-09~11
+/Users/sheng/Library/Python/3.9/lib/python/site-packages/whisper/transcribe.py:132: UserWarning: FP16 is not supported on CPU; using FP32 instead
+  warnings.warn("FP16 is not supported on CPU; using FP32 instead")
+Tue Mar 31 12:11:18 CST 2026 ✅ 完成: 马可福音 1-09~11
