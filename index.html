@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>马可福音 音频播放</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+h1 {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 600;
+  margin: 30px 0 10px;
+  color: #1d1d1f;
+}
+.subtitle {
+  text-align: center;
+  color: #86868b;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+.playlist {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.item {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.item:last-child { border-bottom: none; }
+.item:hover { background: #f5f5f7; }
+.item.active { background: #e8f4fd; }
+.num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  flex-shrink: 0;
+  margin-right: 14px;
+}
+.item.active .num { background: #007aff; color: #fff; }
+.name {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 500;
+}
+.size {
+  font-size: 13px;
+  color: #86868b;
+  margin-left: 12px;
+}
+.player-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid #e0e0e0;
+  padding: 12px 20px;
+  display: none;
+  z-index: 100;
+}
+.player-bar.show { display: block; }
+.player-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.player-controls audio {
+  flex: 1;
+  height: 36px;
+}
+.btn-nav {
+  background: #007aff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-nav:disabled { background: #ccc; cursor: default; }
+.footer {
+  text-align: center;
+  padding: 40px 0 100px;
+  color: #86868b;
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<h1>📖 马可福音</h1>
+<p class="subtitle">音频播放列表</p>
+
+<div class="playlist" id="playlist"></div>
+
+<div class="player-bar" id="playerBar">
+  <div class="player-title" id="playerTitle"></div>
+  <div class="player-controls">
+    <button class="btn-nav" id="btnPrev" onclick="playPrev()">⏮ 上一首</button>
+    <audio id="audio" controls></audio>
+    <button class="btn-nav" id="btnNext" onclick="playNext()">下一首 ⏭</button>
+  </div>
+</div>
+
+<div class="footer">共 <span id="total"></span> 个音频</div>
+
+<script>
+const files = [
+  { name: "马可福音 1-4~8【未完整版】", file: "马可福音1-4~8【未完整版】.m4a" },
+  { name: "马可福音 1-9~11", file: "马可福音 1-9~11.m4a" },
+  { name: "马可福音 1-12~15", file: "马可福音 1-12~15.m4a" },
+  { name: "马可福音 1-16~20", file: "马可福音 1-16~20.m4a" },
+  { name: "马可福音 1-21~28", file: "马可福音 1-21~28.m4a" },
+  { name: "马可福音 1-29~34", file: "马可福音 1-29~34.m4a" },
+  { name: "马可福音 1-35~39", file: "马可福音 1-35~39.m4a" },
+  { name: "马可福音 1-40~45", file: "马可福音 1-40~45.m4a" },
+  { name: "马可福音 2-1~12", file: "马可福音 2-1~12.m4a" },
+  { name: "马可福音 2-13~17", file: "马可福音 2-13~17.m4a" },
+  { name: "马可福音 2-18~22", file: "马可福音 2-18~22.m4a" },
+  { name: "马可福音 2-23~28 (1)", file: "马可福音 2-23~28_1.m4a" },
+  { name: "马可福音 2-23~28 (2)", file: "马可福音 2-23~28_2.m4a" },
+  { name: "马可福音 3-1~6 (1)", file: "马可福音 3-1~6_1.m4a" },
+  { name: "马可福音 3-1~6 (2)", file: "马可福音 3-1~6_2.m4a" },
+  { name: "马可福音 3-20~30", file: "马可福音 3-20~30.m4a" },
+  { name: "马可福音 3-31~35", file: "马可福音 3-31~35.m4a" }
+];
+
+let current = -1;
+const playlist = document.getElementById('playlist');
+const audio = document.getElementById('audio');
+const playerBar = document.getElementById('playerBar');
+const playerTitle = document.getElementById('playerTitle');
+
+document.getElementById('total').textContent = files.length;
+
+files.forEach((f, i) => {
+  const div = document.createElement('div');
+  div.className = 'item';
+  div.innerHTML = `<div class="num">${i+1}</div><div class="name">${f.name}</div>`;
+  div.onclick = () => play(i);
+  playlist.appendChild(div);
+});
+
+function play(idx) {
+  if (idx < 0 || idx >= files.length) return;
+  current = idx;
+  audio.src = encodeURIComponent(files[idx].file).replace(/%2F/g, '/');
+  // Use raw github pages URL
+  audio.src = files[idx].file;
+  playerTitle.textContent = files[idx].name;
+  playerBar.classList.add('show');
+  audio.play();
+  document.querySelectorAll('.item').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
+  document.querySelectorAll('.item')[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function playNext() { play(current + 1); }
+function playPrev() { play(current - 1); }
+
+audio.addEventListener('ended', () => {
+  if (current < files.length - 1) playNext();
+});
+
+document.getElementById('btnPrev').disabled = true;
+audio.addEventListener('play', () => {
+  document.getElementById('btnPrev').disabled = current <= 0;
+  document.getElementById('btnNext').disabled = current >= files.length - 1;
+});
+</script>
+</body>
+</html>
