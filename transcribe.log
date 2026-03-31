@@ -120,3 +120,9 @@ Tue Mar 31 12:33:40 CST 2026 [10/16] 转写: 马可福音 2-23~28_1
 /Users/sheng/Library/Python/3.9/lib/python/site-packages/whisper/transcribe.py:132: UserWarning: FP16 is not supported on CPU; using FP32 instead
   warnings.warn("FP16 is not supported on CPU; using FP32 instead")
 Tue Mar 31 12:34:13 CST 2026 ✅ 完成: 马可福音 2-23~28_1
+To https://github.com/Sheng-2000/audio-player.git
+   3f19908..1a7b850  main -> main
+Tue Mar 31 12:34:14 CST 2026 [11/16] 转写: 马可福音 2-23~28_2
+/Users/sheng/Library/Python/3.9/lib/python/site-packages/whisper/transcribe.py:132: UserWarning: FP16 is not supported on CPU; using FP32 instead
+  warnings.warn("FP16 is not supported on CPU; using FP32 instead")
+Tue Mar 31 12:36:10 CST 2026 ✅ 完成: 马可福音 2-23~28_1
