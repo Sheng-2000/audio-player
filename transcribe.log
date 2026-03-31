@@ -9,3 +9,10 @@ Tue Mar 31 12:02:02 CST 2026 [1/17] 转写: 马可福音 1-16~20
 /Users/sheng/Library/Python/3.9/lib/python/site-packages/whisper/transcribe.py:132: UserWarning: FP16 is not supported on CPU; using FP32 instead
   warnings.warn("FP16 is not supported on CPU; using FP32 instead")
 Tue Mar 31 12:03:56 CST 2026 ✅ 完成: 马可福音 1-16~20
+To https://github.com/Sheng-2000/audio-player.git
+   a40fcf8..62e8b12  main -> main
+Tue Mar 31 12:03:58 CST 2026 [2/17] 转写: 马可福音 1-21~28
+/Users/sheng/Library/Python/3.9/lib/python/site-packages/whisper/transcribe.py:132: UserWarning: FP16 is not supported on CPU; using FP32 instead
+  warnings.warn("FP16 is not supported on CPU; using FP32 instead")
+/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/multiprocessing/resource_tracker.py:216: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
