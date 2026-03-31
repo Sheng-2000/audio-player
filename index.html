@@ -6,14 +6,7 @@
 <title>马可福音 音频播放</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #f5f5f7;
-  color: #1d1d1f;
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f7; color: #1d1d1f; padding: 20px; max-width: 800px; margin: 0 auto; }
 h1 { text-align: center; font-size: 28px; font-weight: 600; margin: 30px 0 10px; }
 .subtitle { text-align: center; color: #86868b; font-size: 14px; margin-bottom: 30px; }
 .loading { text-align: center; padding: 40px; color: #86868b; }
@@ -26,22 +19,31 @@ h1 { text-align: center; font-size: 28px; font-weight: 600; margin: 30px 0 10px;
 .item.active .num { background: #007aff; color: #fff; }
 .name { flex: 1; font-size: 16px; font-weight: 500; cursor: pointer; }
 .btn-group { display: flex; gap: 8px; margin-left: 12px; flex-shrink: 0; }
-.btn {
-  border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer;
-  display: flex; align-items: center; gap: 4px; transition: all 0.15s; text-decoration: none;
-}
+.btn { border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.15s; text-decoration: none; }
 .btn-play { background: #007aff; color: #fff; }
 .btn-play:hover { background: #0056cc; }
 .btn-play.playing { background: #ff3b30; }
+.btn-text { background: #34c759; color: #fff; }
+.btn-text:hover { background: #28a745; }
+.btn-text.disabled { background: #ccc; cursor: default; }
 .btn-dl { background: #e8e8ed; color: #1d1d1f; }
 .btn-dl:hover { background: #d1d1d6; }
+/* 文字版弹窗 */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 16px; width: 90%; max-width: 700px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e0e0e0; }
+.modal-title { font-size: 16px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.modal-actions { display: flex; gap: 8px; margin-left: 12px; }
+.modal-btn { border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; text-decoration: none; }
+.modal-close { background: #e8e8ed; }
+.modal-close:hover { background: #d1d1d6; }
+.modal-download { background: #007aff; color: #fff; }
+.modal-download:hover { background: #0056cc; }
+.modal-body { padding: 20px; overflow-y: auto; flex: 1; font-size: 15px; line-height: 1.8; white-space: pre-wrap; word-break: break-word; }
+.modal-body.loading-text { text-align: center; color: #86868b; }
 /* 底部播放栏 */
-.player-bar {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: rgba(255,255,255,0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid #e0e0e0; padding: 12px 20px 20px;
-  display: none; z-index: 100;
-}
+.player-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid #e0e0e0; padding: 12px 20px 20px; display: none; z-index: 100; }
 .player-bar.show { display: block; }
 .player-info { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .player-title { font-size: 14px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -55,14 +57,32 @@ h1 { text-align: center; font-size: 28px; font-weight: 600; margin: 30px 0 10px;
 .ctrl-btn.main { background: #007aff; color: #fff; width: 48px; height: 48px; font-size: 22px; }
 .ctrl-btn.main:hover { background: #0056cc; }
 .footer { text-align: center; padding: 40px 0 120px; color: #86868b; font-size: 13px; }
+@media (max-width: 600px) {
+  .btn-group { flex-direction: column; gap: 4px; }
+  .btn { padding: 5px 8px; font-size: 12px; }
+}
 </style>
 </head>
 <body>
 
 <h1>📖 马可福音</h1>
-<p class="subtitle">音频播放列表</p>
+<p class="subtitle">音频播放 · 文字版</p>
 <div class="loading" id="loading">加载中...</div>
 <div class="playlist" id="playlist"></div>
+
+<!-- 文字版弹窗 -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-actions">
+        <a class="modal-btn modal-download" id="modalDl" href="#" download>⬇ 下载</a>
+        <button class="modal-btn modal-close" onclick="closeModal()">✕ 关闭</button>
+      </div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
 
 <div class="player-bar" id="playerBar">
   <div class="player-info">
@@ -83,6 +103,7 @@ h1 { text-align: center; font-size: 28px; font-weight: 600; margin: 30px 0 10px;
 
 <script>
 let files = [];
+let transcripts = {};
 let current = -1;
 let isPlaying = false;
 const playlist = document.getElementById('playlist');
@@ -93,6 +114,7 @@ const playerTime = document.getElementById('playerTime');
 const progress = document.getElementById('progress');
 const playPauseBtn = document.getElementById('playPauseBtn');
 const loading = document.getElementById('loading');
+const BASE = 'https://raw.githubusercontent.com/Sheng-2000/audio-player/main/';
 
 async function loadFiles() {
   try {
@@ -102,20 +124,30 @@ async function loadFiles() {
       .filter(f => f.name.endsWith('.m4a') || f.name.endsWith('.M4A'))
       .map(f => ({ name: f.name.replace(/\.m4a$/i, ''), file: f.name, size: f.size }))
       .sort((a, b) => a.name.localeCompare(b.name, 'zh'));
+    // 检查哪些有文字版
+    const transcriptDir = data.find(f => f.name === 'transcripts' && f.type === 'dir');
+    if (transcriptDir) {
+      const tRes = await fetch('https://api.github.com/repos/Sheng-2000/audio-player/contents/transcripts');
+      const tData = await tRes.json();
+      tData.forEach(f => {
+        if (f.name.endsWith('.txt')) {
+          transcripts[f.name.replace(/\.txt$/, '')] = true;
+        }
+      });
+    }
     render();
   } catch (e) {
     loading.textContent = '加载失败，请刷新重试';
+    console.error(e);
   }
 }
-
-function formatSize(b) { return b > 1048576 ? (b/1048576).toFixed(1)+' MB' : (b/1024).toFixed(0)+' KB'; }
-function formatTime(s) { if(isNaN(s)) return '0:00'; const m=Math.floor(s/60); return m+':'+(Math.floor(s%60)+'').padStart(2,'0'); }
 
 function render() {
   loading.style.display = 'none';
   document.getElementById('total').textContent = files.length;
   playlist.innerHTML = '';
   files.forEach((f, i) => {
+    const hasText = !!transcripts[f.name];
     const div = document.createElement('div');
     div.className = 'item';
     div.id = 'item-' + i;
@@ -124,11 +156,42 @@ function render() {
       <div class="name" onclick="play(${i})">${f.name}</div>
       <div class="btn-group">
         <button class="btn btn-play" id="pbtn-${i}" onclick="play(${i})">▶ 播放</button>
+        <button class="btn btn-text ${hasText ? '' : 'disabled'}" onclick="${hasText ? `showText(${i})` : 'void(0)'}" title="${hasText ? '查看文字版' : '文字版生成中...'}">📄 文字版</button>
         <a class="btn btn-dl" href="${f.file}" download>⬇ 下载</a>
       </div>`;
     playlist.appendChild(div);
   });
 }
+
+function showText(idx) {
+  const f = files[idx];
+  if (!transcripts[f.name]) return;
+  const overlay = document.getElementById('modalOverlay');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  const dl = document.getElementById('modalDl');
+  title.textContent = f.name;
+  body.textContent = '加载中...';
+  body.className = 'modal-body loading-text';
+  dl.href = 'transcripts/' + encodeURIComponent(f.name) + '.txt';
+  dl.download = f.name + '.txt';
+  overlay.classList.add('show');
+  fetch(BASE + 'transcripts/' + encodeURIComponent(f.name) + '.txt')
+    .then(r => r.text())
+    .then(text => {
+      body.textContent = text;
+      body.className = 'modal-body';
+    })
+    .catch(() => {
+      body.textContent = '加载失败';
+    });
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+function formatTime(s) { if(isNaN(s)) return '0:00'; const m=Math.floor(s/60); return m+':'+(Math.floor(s%60)+'').padStart(2,'0'); }
 
 function play(idx) {
   if (idx < 0 || idx >= files.length) return;
@@ -169,7 +232,13 @@ audio.addEventListener('timeupdate', () => {
     playerTime.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration);
   }
 });
+audio.addEventListener('play', () => { isPlaying = true; updateUI(); });
+audio.addEventListener('pause', () => { isPlaying = false; updateUI(); });
 progress.addEventListener('input', () => { if (audio.duration) audio.currentTime = (progress.value / 100) * audio.duration; });
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
 
 loadFiles();
 </script>
