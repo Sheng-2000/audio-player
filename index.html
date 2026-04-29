@@ -569,15 +569,23 @@ const BASE = 'https://raw.githubusercontent.com/Sheng-2000/audio-player/main/';
 let audioCtx, gainNode, audioSource;
 let currentGain = 2.0; // 默认2倍音量
 let isMuted = false;
+let audioCtxInitFailed = false;
 
 function initAudioContext() {
-  if (audioCtx) return;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  gainNode = audioCtx.createGain();
-  gainNode.gain.value = currentGain;
-  audioSource = audioCtx.createMediaElementSource(audio);
-  audioSource.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
+  if (audioCtx || audioCtxInitFailed) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = currentGain;
+    audioSource = audioCtx.createMediaElementSource(audio);
+    audioSource.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+  } catch (e) {
+    console.warn('Web Audio API 初始化失败，使用原始音量', e);
+    audioCtxInitFailed = true;
+    audioCtx = null;
+  }
 }
 
 function setGain(val) {
@@ -585,9 +593,9 @@ function setGain(val) {
   if (gainNode) gainNode.gain.value = isMuted ? 0 : val;
   const label = document.getElementById('volLabel');
   const icon = document.getElementById('volIcon');
-  if (val === 0) { label.textContent = '静音'; icon.textContent = '🔇'; }
+  if (isMuted || val === 0) { label.textContent = '静音'; icon.textContent = '🔇'; }
   else if (val < 1) { label.textContent = val.toFixed(1) + 'x'; icon.textContent = '🔈'; }
-  else { label.textContent = val.toFixed(1) + 'x'; icon.textContent = isMuted ? '🔇' : '🔊'; }
+  else { label.textContent = val.toFixed(1) + 'x'; icon.textContent = '🔊'; }
 }
 
 function toggleMute() {
@@ -689,13 +697,13 @@ function formatTime(s) { if(isNaN(s)) return '0:00'; const m=Math.floor(s/60); r
 
 function play(idx) {
   if (idx < 0 || idx >= files.length) return;
-  initAudioContext();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
   current = idx;
   audio.src = files[idx].file;
   playerTitle.textContent = files[idx].name;
   playerBar.classList.add('show');
-  audio.play();
+  // 先初始化 AudioContext（必须在用户交互中调用）
+  initAudioContext();
+  audio.play().catch(e => console.warn('播放失败:', e));
   isPlaying = true;
   updateUI();
 }
