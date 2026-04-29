@@ -391,6 +391,53 @@ body {
   max-width: 900px;
   margin-left: auto;
   margin-right: auto;
+  flex-wrap: wrap;
+}
+
+.volume-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.vol-icon {
+  font-size: 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s;
+}
+
+.vol-icon:hover {
+  transform: scale(1.2);
+}
+
+.volume-wrap input[type=range] {
+  width: 100px;
+  height: 5px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.volume-wrap input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  cursor: pointer;
+}
+
+.vol-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  min-width: 28px;
+  text-align: center;
+  font-weight: 600;
 }
 
 .ctrl-btn {
@@ -491,6 +538,11 @@ body {
     <button class="ctrl-btn" onclick="playPrev()" title="上一首">⏮</button>
     <button class="ctrl-btn main" id="playPauseBtn" onclick="togglePlay()" title="播放/暂停">▶</button>
     <button class="ctrl-btn" onclick="playNext()" title="下一首">⏭</button>
+    <div class="volume-wrap">
+      <span class="vol-icon" onclick="toggleMute()" id="volIcon">🔊</span>
+      <input type="range" id="volume" min="0" max="300" value="200" title="音量">
+      <span class="vol-label" id="volLabel">2x</span>
+    </div>
   </div>
 </div>
 
@@ -512,6 +564,42 @@ const progress = document.getElementById('progress');
 const playPauseBtn = document.getElementById('playPauseBtn');
 const loading = document.getElementById('loading');
 const BASE = 'https://raw.githubusercontent.com/Sheng-2000/audio-player/main/';
+
+// Web Audio API 音量放大
+let audioCtx, gainNode, audioSource;
+let currentGain = 2.0; // 默认2倍音量
+let isMuted = false;
+
+function initAudioContext() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  gainNode = audioCtx.createGain();
+  gainNode.gain.value = currentGain;
+  audioSource = audioCtx.createMediaElementSource(audio);
+  audioSource.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+}
+
+function setGain(val) {
+  currentGain = val;
+  if (gainNode) gainNode.gain.value = isMuted ? 0 : val;
+  const label = document.getElementById('volLabel');
+  const icon = document.getElementById('volIcon');
+  if (val === 0) { label.textContent = '静音'; icon.textContent = '🔇'; }
+  else if (val < 1) { label.textContent = val.toFixed(1) + 'x'; icon.textContent = '🔈'; }
+  else { label.textContent = val.toFixed(1) + 'x'; icon.textContent = isMuted ? '🔇' : '🔊'; }
+}
+
+function toggleMute() {
+  isMuted = !isMuted;
+  if (gainNode) gainNode.gain.value = isMuted ? 0 : currentGain;
+  document.getElementById('volIcon').textContent = isMuted ? '🔇' : '🔊';
+}
+
+document.getElementById('volume').addEventListener('input', function() {
+  isMuted = false;
+  setGain(this.value / 100);
+});
 
 async function loadFiles() {
   try {
@@ -601,6 +689,8 @@ function formatTime(s) { if(isNaN(s)) return '0:00'; const m=Math.floor(s/60); r
 
 function play(idx) {
   if (idx < 0 || idx >= files.length) return;
+  initAudioContext();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   current = idx;
   audio.src = files[idx].file;
   playerTitle.textContent = files[idx].name;
