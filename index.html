@@ -3,70 +3,465 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>马可福音 音频播放</title>
+<title>马可福音 - 圣经学习</title>
 <style>
+/* 基础样式 */
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f7; color: #1d1d1f; padding: 20px; max-width: 800px; margin: 0 auto; }
-h1 { text-align: center; font-size: 28px; font-weight: 600; margin: 30px 0 10px; }
-.subtitle { text-align: center; color: #86868b; font-size: 14px; margin-bottom: 30px; }
-.loading { text-align: center; padding: 40px; color: #86868b; }
-.playlist { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
-.item { display: flex; align-items: center; padding: 14px 20px; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; }
-.item:last-child { border-bottom: none; }
-.item:hover { background: #f5f5f7; }
-.item.active { background: #e8f4fd; }
-.num { width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #666; flex-shrink: 0; margin-right: 14px; }
-.item.active .num { background: #007aff; color: #fff; }
-.name { flex: 1; font-size: 16px; font-weight: 500; cursor: pointer; }
-.btn-group { display: flex; gap: 8px; margin-left: 12px; flex-shrink: 0; }
-.btn { border: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.15s; text-decoration: none; }
-.btn-play { background: #007aff; color: #fff; }
-.btn-play:hover { background: #0056cc; }
-.btn-play.playing { background: #ff3b30; }
-.btn-text { background: #34c759; color: #fff; }
-.btn-text:hover { background: #28a745; }
-.btn-text.disabled { background: #ccc; cursor: default; }
-.btn-dl { background: #e8e8ed; color: #1d1d1f; }
-.btn-dl:hover { background: #d1d1d6; }
+:root {
+  --primary: #8b5a2b; /* 温暖的棕褐色 */
+  --primary-dark: #6b4423;
+  --accent: #c9a66b; /* 金色点缀 */
+  --bg: #faf8f5; /* 温暖的米色背景 */
+  --card: #ffffff;
+  --text: #333333;
+  --text-muted: #777777;
+  --border: #e8e0d6;
+}
+
+body { 
+  font-family: "Noto Serif SC", "Source Han Serif SC", "PingFang SC", "Microsoft YaHei", serif; 
+  background: var(--bg); 
+  color: var(--text); 
+  padding: 20px; 
+  max-width: 900px; 
+  margin: 0 auto; 
+  line-height: 1.8;
+}
+
+/* 顶部标题区域 */
+.header {
+  text-align: center;
+  padding: 60px 20px 40px;
+  background: linear-gradient(135deg, #8b5a2b 0%, #a67c52 100%);
+  color: white;
+  margin: -20px -20px 40px;
+  border-radius: 0 0 40px 40px;
+  box-shadow: 0 8px 30px rgba(139, 90, 43, 0.25);
+}
+
+.header h1 {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: 4px;
+}
+
+.header .verse {
+  font-size: 16px;
+  opacity: 0.95;
+  font-style: italic;
+  margin-top: 10px;
+}
+
+.header .subtitle {
+  font-size: 15px;
+  opacity: 0.85;
+  margin-top: 15px;
+}
+
+/* 加载状态 */
+.loading {
+  text-align: center;
+  padding: 60px;
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
+/* 播放列表 */
+.playlist {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 80px;
+}
+
+.item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(139, 90, 43, 0.08);
+}
+
+.item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 90, 43, 0.15);
+  border-color: var(--accent);
+}
+
+.item.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(139, 90, 43, 0.15);
+  background: linear-gradient(135deg, #fff 0%, #faf8f5 100%);
+}
+
+.num {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e8e0d6 0%, #d4c8b8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  flex-shrink: 0;
+  font-family: "Georgia", serif;
+}
+
+.item.active .num {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+}
+
+.content {
+  flex: 1;
+}
+
+.name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.name:hover {
+  color: var(--primary);
+}
+
+.info {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  text-decoration: none;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.btn-play {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+}
+
+.btn-play:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(139, 90, 43, 0.3);
+}
+
+.btn-play.playing {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.btn-text {
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  color: white;
+}
+
+.btn-text:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.btn-text.disabled {
+  background: #ddd;
+  cursor: default;
+  color: #999;
+}
+
+.btn-dl {
+  background: var(--border);
+  color: var(--primary);
+}
+
+.btn-dl:hover {
+  background: #d4c8b8;
+}
+
 /* 文字版弹窗 */
-.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center; }
-.modal-overlay.show { display: flex; }
-.modal { background: #fff; border-radius: 16px; width: 90%; max-width: 700px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e0e0e0; }
-.modal-title { font-size: 16px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.modal-actions { display: flex; gap: 8px; margin-left: 12px; }
-.modal-btn { border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; text-decoration: none; }
-.modal-close { background: #e8e8ed; }
-.modal-close:hover { background: #d1d1d6; }
-.modal-download { background: #007aff; color: #fff; }
-.modal-download:hover { background: #0056cc; }
-.modal-body { padding: 20px; overflow-y: auto; flex: 1; font-size: 15px; line-height: 1.8; white-space: pre-wrap; word-break: break-word; }
-.modal-body.loading-text { text-align: center; color: #86868b; }
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.modal-overlay.show {
+  display: flex;
+}
+
+.modal {
+  background: var(--card);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #fff 0%, #faf8f5 100%);
+  border-radius: 20px 20px 0 0;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: 12px;
+}
+
+.modal-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.modal-close {
+  background: var(--border);
+  color: var(--text);
+}
+
+.modal-close:hover {
+  background: #d4c8b8;
+}
+
+.modal-download {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+}
+
+.modal-download:hover {
+  transform: scale(1.05);
+}
+
+.modal-body {
+  padding: 32px;
+  overflow-y: auto;
+  flex: 1;
+  font-size: 16px;
+  line-height: 2;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #444;
+}
+
+.modal-body.loading-text {
+  text-align: center;
+  color: var(--text-muted);
+}
+
 /* 底部播放栏 */
-.player-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid #e0e0e0; padding: 12px 20px 20px; display: none; z-index: 100; }
-.player-bar.show { display: block; }
-.player-info { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.player-title { font-size: 14px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.player-time { font-size: 12px; color: #86868b; margin-left: 12px; white-space: nowrap; }
-.progress-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.progress-wrap input[type=range] { flex: 1; height: 4px; -webkit-appearance: none; appearance: none; background: #e0e0e0; border-radius: 2px; outline: none; cursor: pointer; }
-.progress-wrap input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #007aff; cursor: pointer; }
-.player-controls { display: flex; align-items: center; justify-content: center; gap: 16px; }
-.ctrl-btn { background: #e8e8ed; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
-.ctrl-btn:hover { background: #d1d1d6; }
-.ctrl-btn.main { background: #007aff; color: #fff; width: 48px; height: 48px; font-size: 22px; }
-.ctrl-btn.main:hover { background: #0056cc; }
-.footer { text-align: center; padding: 40px 0 120px; color: #86868b; font-size: 13px; }
+.player-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  padding: 16px 20px 30px;
+  display: none;
+  z-index: 100;
+  box-shadow: 0 -4px 20px rgba(139, 90, 43, 0.1);
+}
+
+.player-bar.show {
+  display: block;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.player-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-time {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-left: 12px;
+  white-space: nowrap;
+  font-family: monospace;
+}
+
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.progress-wrap input[type=range] {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.progress-wrap input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(139, 90, 43, 0.3);
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ctrl-btn {
+  background: var(--border);
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.ctrl-btn:hover {
+  background: #d4c8b8;
+  transform: scale(1.1);
+}
+
+.ctrl-btn.main {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  width: 64px;
+  height: 64px;
+  font-size: 28px;
+  box-shadow: 0 4px 12px rgba(139, 90, 43, 0.3);
+}
+
+.ctrl-btn.main:hover {
+  box-shadow: 0 6px 16px rgba(139, 90, 43, 0.4);
+}
+
+/* 页脚 */
+.footer {
+  text-align: center;
+  padding: 60px 20px 140px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.footer strong {
+  color: var(--primary);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .header h1 { font-size: 32px; }
+  .item { padding: 16px 18px; }
+  .num { width: 40px; height: 40px; font-size: 16px; }
+  .name { font-size: 16px; }
+  .btn { padding: 8px 12px; font-size: 13px; }
+  .btn-group { gap: 8px; }
+}
+
 @media (max-width: 600px) {
-  .btn-group { flex-direction: column; gap: 4px; }
-  .btn { padding: 5px 8px; font-size: 12px; }
+  .btn-group { flex-direction: column; gap: 6px; }
+  .btn { padding: 8px 14px; }
+  .modal-body { padding: 20px; font-size: 15px; }
 }
 </style>
 </head>
 <body>
 
-<h1>📖 马可福音</h1>
-<p class="subtitle">音频播放 · 文字版</p>
+<div class="header">
+  <h1>📖 马可福音</h1>
+  <p class="verse">「我所传的福音，并不是凭着人意。我也不是从人领受的，也不是人教导我的，乃是从耶稣基督启示来的。」</p>
+  <p class="subtitle">—— 加拉太书 1:11-12</p>
+</div>
+
 <div class="loading" id="loading">加载中...</div>
 <div class="playlist" id="playlist"></div>
 
@@ -99,7 +494,9 @@ h1 { text-align: center; font-size: 28px; font-weight: 600; margin: 30px 0 10px;
   </div>
 </div>
 
-<div class="footer">共 <span id="total">0</span> 个音频</div>
+<div class="footer">
+  共 <strong id="total">0</strong> 个音频 · 愿神的话语成为你脚前的灯，路上的光
+</div>
 
 <script>
 let files = [];
@@ -142,6 +539,12 @@ async function loadFiles() {
   }
 }
 
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
 function render() {
   loading.style.display = 'none';
   document.getElementById('total').textContent = files.length;
@@ -153,10 +556,13 @@ function render() {
     div.id = 'item-' + i;
     div.innerHTML = `
       <div class="num">${i+1}</div>
-      <div class="name" onclick="play(${i})">${f.name}</div>
+      <div class="content">
+        <div class="name" onclick="play(${i})">${f.name}</div>
+        <div class="info">${formatSize(f.size)} · ${hasText ? '✓ 配有文字稿' : '文字稿生成中...'}</div>
+      </div>
       <div class="btn-group">
         <button class="btn btn-play" id="pbtn-${i}" onclick="play(${i})">▶ 播放</button>
-        <button class="btn btn-text ${hasText ? '' : 'disabled'}" onclick="${hasText ? `showText(${i})` : 'void(0)'}" title="${hasText ? '查看文字版' : '文字版生成中...'}">📄 文字版</button>
+        <button class="btn btn-text ${hasText ? '' : 'disabled'}" onclick="${hasText ? `showText(${i})` : 'void(0)'}" title="${hasText ? '查看文字版' : '文字稿生成中...'}">📄 文字版</button>
         <a class="btn btn-dl" href="${f.file}" download>⬇ 下载</a>
       </div>`;
     playlist.appendChild(div);
