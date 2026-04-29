@@ -540,8 +540,8 @@ body {
     <button class="ctrl-btn" onclick="playNext()" title="下一首">⏭</button>
     <div class="volume-wrap">
       <span class="vol-icon" onclick="toggleMute()" id="volIcon">🔊</span>
-      <input type="range" id="volume" min="0" max="300" value="200" title="音量">
-      <span class="vol-label" id="volLabel">2x</span>
+      <input type="range" id="volume" min="0" max="100" value="100" title="音量">
+      <span class="vol-label" id="volLabel">100%</span>
     </div>
   </div>
 </div>
@@ -565,48 +565,31 @@ const playPauseBtn = document.getElementById('playPauseBtn');
 const loading = document.getElementById('loading');
 const BASE = 'https://raw.githubusercontent.com/Sheng-2000/audio-player/main/';
 
-// Web Audio API 音量放大
-let audioCtx, gainNode, audioSource;
-let currentGain = 2.0; // 默认2倍音量
+// 音量控制（原生 audio.volume，范围 0~1）
 let isMuted = false;
-let audioCtxInitFailed = false;
+let savedVolume = 1.0;
 
-function initAudioContext() {
-  if (audioCtx || audioCtxInitFailed) return;
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    gainNode = audioCtx.createGain();
-    gainNode.gain.value = currentGain;
-    audioSource = audioCtx.createMediaElementSource(audio);
-    audioSource.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-  } catch (e) {
-    console.warn('Web Audio API 初始化失败，使用原始音量', e);
-    audioCtxInitFailed = true;
-    audioCtx = null;
-  }
-}
-
-function setGain(val) {
-  currentGain = val;
-  if (gainNode) gainNode.gain.value = isMuted ? 0 : val;
+function setVolume(val) {
+  // val: 0~100 对应 0%~100%
+  savedVolume = val / 100;
+  audio.volume = isMuted ? 0 : savedVolume;
   const label = document.getElementById('volLabel');
   const icon = document.getElementById('volIcon');
   if (isMuted || val === 0) { label.textContent = '静音'; icon.textContent = '🔇'; }
-  else if (val < 1) { label.textContent = val.toFixed(1) + 'x'; icon.textContent = '🔈'; }
-  else { label.textContent = val.toFixed(1) + 'x'; icon.textContent = '🔊'; }
+  else if (val < 50) { label.textContent = Math.round(val) + '%'; icon.textContent = '🔈'; }
+  else { label.textContent = Math.round(val) + '%'; icon.textContent = '🔊'; }
 }
 
 function toggleMute() {
   isMuted = !isMuted;
-  if (gainNode) gainNode.gain.value = isMuted ? 0 : currentGain;
+  audio.volume = isMuted ? 0 : savedVolume;
   document.getElementById('volIcon').textContent = isMuted ? '🔇' : '🔊';
+  document.getElementById('volLabel').textContent = isMuted ? '静音' : Math.round(savedVolume * 100) + '%';
 }
 
 document.getElementById('volume').addEventListener('input', function() {
   isMuted = false;
-  setGain(this.value / 100);
+  setVolume(this.value);
 });
 
 async function loadFiles() {
@@ -699,10 +682,9 @@ function play(idx) {
   if (idx < 0 || idx >= files.length) return;
   current = idx;
   audio.src = files[idx].file;
+  audio.volume = isMuted ? 0 : savedVolume;
   playerTitle.textContent = files[idx].name;
   playerBar.classList.add('show');
-  // 先初始化 AudioContext（必须在用户交互中调用）
-  initAudioContext();
   audio.play().catch(e => console.warn('播放失败:', e));
   isPlaying = true;
   updateUI();
