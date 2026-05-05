@@ -631,6 +631,14 @@ function formatTime(s) { if(isNaN(s)) return '0:00'; const m=Math.floor(s/60); r
 
 function play(idx) {
   if (idx < 0 || idx >= files.length) return;
+  // 如果点击的是当前正在播放的项，切换暂停
+  if (idx === current && isPlaying) {
+    audio.pause(); isPlaying = false; updateUI(); return;
+  }
+  // 如果点击的是当前暂停的项，继续播放
+  if (idx === current && !isPlaying) {
+    audio.play(); isPlaying = true; updateUI(); return;
+  }
   current = idx;
   audio.src = files[idx].file;
   audio.volume = isMuted ? 0 : savedVolume;
