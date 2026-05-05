@@ -638,7 +638,22 @@ function loadSyncText(name) {
       syncTextLoaded = text;
       // 按换行分段，过滤空行
       const lines = text.split('\n').filter(l => l.trim());
-      syncParagraphs = lines;
+      // 合并短行成有意义的段落（每段约 3~6 行，或累计超过 15 个字符）
+      const merged = [];
+      let buf = '';
+      let lineCount = 0;
+      lines.forEach(line => {
+        buf += (buf ? '' : '') + line;
+        lineCount++;
+        // 合并条件：累积了足够内容或行数
+        if (lineCount >= 3 && buf.length >= 15 || lineCount >= 6 || buf.length >= 40) {
+          merged.push(buf);
+          buf = '';
+          lineCount = 0;
+        }
+      });
+      if (buf) merged.push(buf);
+      syncParagraphs = merged;
       renderSyncParagraphs();
     })
     .catch(() => {
