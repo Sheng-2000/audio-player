@@ -379,6 +379,87 @@ body::before{
   min-width:26px;text-align:center;font-weight:600;
 }
 
+/* ── 同步文字面板 ── */
+.sync-panel{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--parchment);
+  border-top:1px solid var(--border);
+  z-index:99;
+  transform:translateY(100%);
+  transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  display:flex;flex-direction:column;
+  box-shadow:0 -4px 24px rgba(26,47,35,0.1);
+}
+
+.sync-panel.show{
+  transform:translateY(0);
+}
+
+.sync-panel.has-player{
+  bottom:108px;
+}
+
+.sync-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 20px;
+  border-bottom:1px solid var(--border);
+  background:var(--cream);
+  flex-shrink:0;
+  cursor:pointer;
+}
+
+.sync-header:hover{background:#ede8dd}
+
+.sync-title{
+  font-size:13px;font-weight:700;color:var(--deep);
+  display:flex;align-items:center;gap:8px;
+}
+
+.sync-badge{
+  font-size:11px;background:var(--gold);color:var(--deep);
+  padding:1px 8px;border-radius:10px;font-weight:600;
+}
+
+.sync-toggle{
+  font-size:12px;color:var(--ink-light);
+  background:none;border:none;cursor:pointer;
+  font-family:inherit;padding:4px 8px;border-radius:6px;
+}
+.sync-toggle:hover{background:var(--border)}
+
+.sync-body{
+  flex:1;overflow-y:auto;padding:16px 20px;
+  max-height:35vh;
+  scroll-behavior:smooth;
+}
+
+.sync-body::-webkit-scrollbar{width:4px}
+.sync-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.sync-p{
+  font-size:15px;line-height:2;color:var(--ink-light);
+  padding:6px 12px;border-radius:8px;
+  transition:all 0.3s ease;
+  margin-bottom:4px;
+}
+
+.sync-p.active{
+  color:var(--ink);
+  background:rgba(201,169,110,0.15);
+  font-weight:600;
+  box-shadow:inset 3px 0 0 var(--gold);
+}
+
+.sync-p.past{
+  color:var(--ink);
+  opacity:0.6;
+}
+
+.sync-empty{
+  text-align:center;color:var(--ink-light);
+  font-size:14px;padding:40px 20px;
+}
+
 /* ── 页脚 ── */
 .footer{
   text-align:center;padding:40px 20px 120px;
@@ -469,6 +550,19 @@ body::before{
   </div>
 </div>
 
+<!-- 同步文字面板 -->
+<div class="sync-panel" id="syncPanel">
+  <div class="sync-header" onclick="toggleSyncPanel()">
+    <div class="sync-title">
+      📜 同步文字 <span class="sync-badge" id="syncBadge">实时</span>
+    </div>
+    <button class="sync-toggle" id="syncToggle">收起</button>
+  </div>
+  <div class="sync-body" id="syncBody">
+    <div class="sync-empty">播放音频后，文字将在此同步展示</div>
+  </div>
+</div>
+
 <div class="player-bar" id="playerBar">
   <div class="player-inner">
     <div class="player-info">
@@ -509,6 +603,86 @@ const progress = document.getElementById('progress');
 const playPauseBtn = document.getElementById('playPauseBtn');
 const loading = document.getElementById('loading');
 const BASE = 'https://raw.githubusercontent.com/Sheng-2000/audio-player/main/';
+
+// 同步文字面板
+let syncPanelOpen = true;
+let syncParagraphs = [];
+let syncTextLoaded = '';
+let lastSyncIdx = -1;
+
+function toggleSyncPanel() {
+  syncPanelOpen = !syncPanelOpen;
+  const panel = document.getElementById('syncPanel');
+  const toggle = document.getElementById('syncToggle');
+  const body = document.getElementById('syncBody');
+  if (syncPanelOpen) {
+    panel.classList.add('show');
+    toggle.textContent = '收起';
+    body.style.display = '';
+  } else {
+    body.style.display = 'none';
+    toggle.textContent = '展开';
+  }
+}
+
+function loadSyncText(name) {
+  if (!transcripts[name]) {
+    document.getElementById('syncBody').innerHTML = '<div class="sync-empty">该音频暂无文字稿</div>';
+    return;
+  }
+  const body = document.getElementById('syncBody');
+  body.innerHTML = '<div class="sync-empty">加载文字中...</div>';
+  fetch(BASE + 'transcripts/' + encodeURIComponent(name) + '.txt')
+    .then(r => r.text())
+    .then(text => {
+      syncTextLoaded = text;
+      // 按换行分段，过滤空行
+      const lines = text.split('\n').filter(l => l.trim());
+      syncParagraphs = lines;
+      renderSyncParagraphs();
+    })
+    .catch(() => {
+      body.innerHTML = '<div class="sync-empty">文字加载失败</div>';
+    });
+}
+
+function renderSyncParagraphs() {
+  const body = document.getElementById('syncBody');
+  body.innerHTML = '';
+  syncParagraphs.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'sync-p';
+    div.id = 'sync-p-' + i;
+    div.textContent = p;
+    body.appendChild(div);
+  });
+  lastSyncIdx = -1;
+}
+
+function updateSyncHighlight() {
+  if (!audio.duration || syncParagraphs.length === 0) return;
+  const ratio = audio.currentTime / audio.duration;
+  const idx = Math.min(Math.floor(ratio * syncParagraphs.length), syncParagraphs.length - 1);
+  if (idx === lastSyncIdx) return;
+  lastSyncIdx = idx;
+
+  syncParagraphs.forEach((_, i) => {
+    const el = document.getElementById('sync-p-' + i);
+    if (!el) return;
+    el.classList.remove('active', 'past');
+    if (i < idx) el.classList.add('past');
+    else if (i === idx) el.classList.add('active');
+  });
+
+  // 自动滚动到当前段落
+  const activeEl = document.getElementById('sync-p-' + idx);
+  if (activeEl) {
+    const body = document.getElementById('syncBody');
+    const elTop = activeEl.offsetTop - body.offsetTop;
+    const elMid = elTop - body.clientHeight / 2 + activeEl.clientHeight / 2;
+    body.scrollTo({ top: Math.max(0, elMid), behavior: 'smooth' });
+  }
+}
 
 // 音量控制
 let isMuted = false;
@@ -636,6 +810,16 @@ function play(idx) {
   audio.volume = isMuted ? 0 : savedVolume;
   playerTitle.textContent = files[idx].name;
   playerBar.classList.add('show');
+  // 打开同步文字面板
+  const panel = document.getElementById('syncPanel');
+  panel.classList.add('show');
+  panel.classList.add('has-player');
+  if (!syncPanelOpen) {
+    syncPanelOpen = true;
+    document.getElementById('syncToggle').textContent = '收起';
+    document.getElementById('syncBody').style.display = '';
+  }
+  loadSyncText(files[idx].name);
   audio.play().catch(e => console.warn('播放失败:', e));
   isPlaying = true;
   updateUI();
@@ -667,6 +851,7 @@ audio.addEventListener('timeupdate', () => {
   if (audio.duration) {
     progress.value = (audio.currentTime / audio.duration) * 100;
     playerTime.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration);
+    updateSyncHighlight();
   }
 });
 audio.addEventListener('play', () => { isPlaying = true; updateUI(); });
