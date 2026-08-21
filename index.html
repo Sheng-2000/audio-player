@@ -547,8 +547,8 @@ async function loadFiles() {
     const res = await fetch('https://api.github.com/repos/Sheng-2000/audio-player/contents/');
     const data = await res.json();
     files = data
-      .filter(f => f.name.endsWith('.m4a') || f.name.endsWith('.M4A'))
-      .map(f => ({ name: f.name.replace(/\.m4a$/i, ''), file: f.name, size: f.size }))
+      .filter(f => /\.(m4a|mp3)$/i.test(f.name))
+      .map(f => ({ name: f.name.replace(/\.(m4a|mp3)$/i, ''), file: f.name, size: f.size }))
       .sort((a, b) => a.name.localeCompare(b.name, 'zh'));
     const transcriptDir = data.find(f => f.name === 'transcripts' && f.type === 'dir');
     if (transcriptDir) {
