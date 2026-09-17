@@ -10,6 +10,9 @@ set -euo pipefail
 AUDIO_SRC="/Users/sheng/Sheng/MyData/02-任务空间/家庭生活/其他/audio-player"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"   # 脚本所在目录 = 仓库根目录
 WHISPER="/Users/sheng/Library/Python/3.9/bin/whisper"
+# OpenCC 所需的 Python 解释器（macOS 自带 CLI Tools 的 3.9，已装 opencc）
+# 注意：沙箱/部分环境中 `python3` 可能指向无 opencc 的新版本，故显式指定
+PYTHON="/Library/Developer/CommandLineTools/usr/bin/python3"
 TRANSCRIPTS_DIR="$REPO_DIR/transcripts"
 
 # 颜色
@@ -27,7 +30,7 @@ check_deps() {
     local missing=()
     [[ ! -d "$AUDIO_SRC" ]] && missing+=("音频源目录: $AUDIO_SRC")
     [[ ! -x "$WHISPER" ]]  && missing+=("whisper: $WHISPER")
-    python3 -c "import opencc" 2>/dev/null || missing+=("opencc (pip install opencc)")
+    "$PYTHON" -c "import opencc" 2>/dev/null || missing+=("opencc (pip install opencc)")
 
     if [[ ${#missing[@]} -gt 0 ]]; then
         err "缺少依赖:"
@@ -125,7 +128,7 @@ convert_t2s() {
         fi
         [[ -f "$txt" ]] || continue
 
-        python3 -c "
+        "$PYTHON" -c "
 import opencc
 cc = opencc.OpenCC('t2s')
 with open('$txt', 'r') as f:
@@ -181,7 +184,9 @@ git_push() {
     git commit -m "$msg"
     log "提交: $msg"
 
-    git push origin main
+    # 绕过可能存在的本地出口代理（沙箱/公司网络常见 HTTP_PROXY 对 GitHub 返回 502）
+    unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
+    git -c http.version=HTTP/1.1 push origin main
     log "已推送到 GitHub"
 }
 
