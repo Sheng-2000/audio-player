@@ -15,6 +15,10 @@ WHISPER="/Users/sheng/Library/Python/3.9/bin/whisper"
 PYTHON="/Library/Developer/CommandLineTools/usr/bin/python3"
 TRANSCRIPTS_DIR="$REPO_DIR/transcripts"
 
+# ffmpeg（压缩用）
+FFMPEG="$(command -v ffmpeg || true)"
+FFPROBE="$(command -v ffprobe || true)"
+
 # 颜色
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -30,6 +34,8 @@ check_deps() {
     local missing=()
     [[ ! -d "$AUDIO_SRC" ]] && missing+=("音频源目录: $AUDIO_SRC")
     [[ ! -x "$WHISPER" ]]  && missing+=("whisper: $WHISPER")
+    [[ -n "$FFMPEG" ]]     || missing+=("ffmpeg (brew install ffmpeg)")
+    [[ -n "$FFPROBE" ]]    || missing+=("ffprobe (随 ffmpeg 安装)")
     "$PYTHON" -c "import opencc" 2>/dev/null || missing+=("opencc (pip install opencc)")
 
     if [[ ${#missing[@]} -gt 0 ]]; then
@@ -43,7 +49,7 @@ check_deps() {
 # ---------- 检测新增 ----------
 check_new_files() {
     NEW_AUDIO=()
-    for f in "$AUDIO_SRC"/*.m4a "$AUDIO_SRC"/*.M4A; do
+    for f in "$AUDIO_SRC"/*.m4a "$AUDIO_SRC"/*.M4A "$AUDIO_SRC"/*.mp3 "$AUDIO_SRC"/*.MP3; do
         [[ -f "$f" ]] || continue
         local basename=$(basename "$f")
         [[ -f "$REPO_DIR/$basename" ]] || NEW_AUDIO+=("$basename")
@@ -67,10 +73,88 @@ sync_audio() {
     log "共新增 ${#NEW_AUDIO[@]} 个音频文件"
 }
 
-# ---------- Step 2: Whisper 转写 ----------
+# ---------- Step 2: 压缩新增音频（重编码为 mono AAC 24kHz/48kbps） ----------
+compress_audio() {
+    echo ""
+    echo "========== Step 2: 压缩新增音频 =========="
+
+    local count=0
+    for name in "${NEW_AUDIO[@]}"; do
+        local src="$REPO_DIR/$name"
+
+        # 临时文件与最终输出（mp3 统一转成同名 .m4a）
+        local base="${name%.*}"
+        local ext="${name##*.}"
+        ext="${ext,,}"   # 转小写
+        local out_final
+        if [[ "$ext" == "mp3" ]]; then
+            out_final="$REPO_DIR/${base}.m4a"
+        else
+            out_final="$src"
+        fi
+        local tmp="/tmp/reenc_${base}.m4a"
+
+        # 已压缩过（m4a 输出已存在且与仓库同名）则跳过
+        if [[ -f "$out_final" && "$ext" != "mp3" ]]; then
+            continue
+        fi
+
+        log "压缩: $name -> $(basename "$out_final") ..."
+        local before after
+        before=$(stat -f%z "$src" 2>/dev/null || echo 0)
+
+        # 时长校验用源时长
+        local dur_src=0
+        dur_src=$("$FFPROBE" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$src" 2>/dev/null | head -1)
+        dur_src=${dur_src:-0}
+
+        # 重编码到临时目录（失败不覆盖原文件）
+        rm -f "$tmp"
+        if ! "$FFMPEG" -y -i "$src" -ac 1 -ar 24000 -b:a 48k -c:a aac "$tmp" >/dev/null 2>&1 || [[ ! -f "$tmp" ]]; then
+            err "压缩失败: $name"
+            continue
+        fi
+
+        # 时长容差校验（±2%）
+        local dur_dst=0
+        dur_dst=$("$FFPROBE" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$tmp" 2>/dev/null | head -1)
+        dur_dst=${dur_dst:-0}
+        if [[ -n "$dur_src" ]] && awk -v a="$dur_src" -v b="$dur_dst" 'BEGIN{exit !(a>0 && (b-a)/a > 0.02)}'; then
+            warn "时长偏差 $name: $(echo "$dur_src" | cut -d. -f1)s -> $(echo "$dur_dst" | cut -d. -f1)s"
+        fi
+
+        # 原子替换；mp3 需删除旧 .mp3
+        mv -f "$tmp" "$out_final"
+        if [[ "$ext" == "mp3" && -f "$src" && "$src" != "$out_final" ]]; then
+            rm -f "$src"
+        fi
+
+        local after
+        after=$(stat -f%z "$out_final")
+        log "压缩完成: $(basename "$out_final")  ($((before/1024))KB -> $((after/1024))KB)"
+        ((count++))
+    done
+
+    # 同步：若因 mp3->m4a 产生新文件名，需刷新 NEW_AUDIO 列表，让后续转写/繁转简用最终 m4a 名
+    NEW_AUDIO=()
+    for f in "$REPO_DIR"/*.m4a "$REPO_DIR"/*.M4A; do
+        [[ -f "$f" ]] || continue
+        local basename=$(basename "$f")
+        # 只要该 m4a 在源目录有同名音频，即视为本次新增（压缩后的产物）
+        [[ -f "$AUDIO_SRC/$basename" || -f "$AUDIO_SRC/${basename%.*}.mp3" || -f "$AUDIO_SRC/${basename%.*}.MP3" ]] && NEW_AUDIO+=("$basename")
+    done
+
+    if [[ $count -eq 0 ]]; then
+        warn "没有需要压缩的新增音频"
+    else
+        log "共压缩 $count 个音频"
+    fi
+}
+
+# ---------- Step 3: Whisper 转写 ----------
 transcribe() {
     echo ""
-    echo "========== Step 2: 语音转文字 =========="
+    echo "========== Step 3: 语音转文字 =========="
 
     mkdir -p "$TRANSCRIPTS_DIR"
 
@@ -109,10 +193,10 @@ transcribe() {
     fi
 }
 
-# ---------- Step 3: 繁体转简体（仅处理新增的 txt） ----------
+# ---------- Step 4: 繁体转简体（仅处理新增的 txt） ----------
 convert_t2s() {
     echo ""
-    echo "========== Step 3: 繁体 → 简体 =========="
+    echo "========== Step 4: 繁体 → 简体 =========="
 
     local count=0
     for f in "$REPO_DIR"/*.m4a "$REPO_DIR"/*.M4A; do
@@ -148,10 +232,10 @@ with open('$txt', 'w') as f:
     fi
 }
 
-# ---------- Step 4: Git 提交推送 ----------
+# ---------- Step 5: Git 提交推送 ----------
 git_push() {
     echo ""
-    echo "========== Step 4: Git 提交推送 =========="
+    echo "========== Step 5: Git 提交推送 =========="
 
     cd "$REPO_DIR"
 
@@ -208,6 +292,7 @@ main() {
 
     log "检测到 ${#NEW_AUDIO[@]} 个新增音频: ${NEW_AUDIO[*]}"
     sync_audio
+    compress_audio
     transcribe
     convert_t2s
     git_push
