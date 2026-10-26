@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>马可福音 - 圣经学习</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --deep:#1a2f23;
+  --forest:#2d4a3e;
+  --sage:#4a6b5a;
+  --gold:#c9a96e;
+  --gold-light:#e2cc9c;
+  --cream:#f5f0e8;
+  --parchment:#faf7f0;
+  --ink:#2c2416;
+  --ink-light:#5a4f3e;
+  --border:#d4cbb8;
+  --shadow:rgba(26,47,35,0.12);
+}
+
+html{scroll-behavior:smooth}
+
+body{
+  font-family:'Noto Serif SC','Source Han Serif SC','Songti SC',serif;
+  background:var(--parchment);
+  color:var(--ink);
+  line-height:1.8;
+  min-height:100vh;
+}
+
+/* ── 纹理背景 ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;
+  background:
+    radial-gradient(ellipse at 20% 0%,rgba(201,169,110,0.08) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 100%,rgba(45,74,62,0.06) 0%,transparent 50%);
+  pointer-events:none;
+}
+
+/* ── 顶部 ── */
+.header{
+  position:relative;
+  text-align:center;
+  padding:56px 24px 44px;
+  background:linear-gradient(170deg,var(--deep) 0%,var(--forest) 60%,#1e3a2d 100%);
+  color:var(--cream);
+  overflow:hidden;
+}
+
+.header::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='rgba(201,169,110,0.06)' stroke-width='0.5'/%3E%3C/svg%3E") repeat;
+  opacity:0.5;pointer-events:none;
+}
+
+.header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+
+.header-ornament{
+  font-family:'Cormorant Garamond',serif;
+  font-size:13px;letter-spacing:8px;text-transform:uppercase;
+  color:var(--gold);opacity:0.7;margin-bottom:12px;
+}
+
+.header h1{
+  font-size:44px;font-weight:900;letter-spacing:6px;
+  margin-bottom:16px;position:relative;
+}
+
+.header h1::after{
+  content:'';display:block;width:60px;height:2px;
+  background:var(--gold);margin:16px auto 0;
+}
+
+.verse{
+  font-family:'Cormorant Garamond','Noto Serif SC',serif;
+  font-size:17px;font-style:italic;
+  color:var(--gold-light);opacity:0.9;
+  max-width:520px;margin:0 auto;
+  line-height:1.9;
+}
+
+.verse-ref{
+  font-size:13px;color:var(--gold);opacity:0.6;
+  margin-top:10px;letter-spacing:2px;
+}
+
+/* ── 主内容 ── */
+.container{
+  max-width:860px;margin:0 auto;padding:0 20px;
+}
+
+/* ── 章节导航 ── */
+.chapter-nav{
+  display:flex;gap:8px;padding:24px 0 8px;
+  overflow-x:auto;scrollbar-width:none;
+}
+.chapter-nav::-webkit-scrollbar{display:none}
+
+.chapter-tag{
+  flex-shrink:0;padding:6px 16px;
+  border:1px solid var(--border);border-radius:20px;
+  font-size:13px;color:var(--ink-light);
+  background:transparent;cursor:pointer;
+  transition:all 0.2s;white-space:nowrap;
+  font-family:inherit;
+}
+.chapter-tag:hover,.chapter-tag.active{
+  background:var(--deep);color:var(--cream);
+  border-color:var(--deep);
+}
+
+/* ── 加载 ── */
+.loading{text-align:center;padding:80px 20px;color:var(--ink-light);font-size:16px}
+
+/* ── 播放列表 ── */
+.playlist{display:flex;flex-direction:column;gap:6px;padding-bottom:100px}
+
+.group-separator{
+  margin:20px 0 6px;padding:0 4px;
+  display:flex;align-items:center;gap:12px;
+}
+.group-separator::before,.group-separator::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+.group-title{
+  font-size:15px;font-weight:700;color:var(--deep);
+  letter-spacing:2px;white-space:nowrap;
+}
+
+.item{
+  display:flex;align-items:center;gap:16px;
+  padding:18px 20px;
+  border-radius:12px;
+  background:var(--cream);
+  border:1px solid transparent;
+  cursor:pointer;
+  transition:all 0.25s ease;
+  position:relative;
+}
+
+.item::before{
+  content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:3px;height:0;background:var(--gold);
+  border-radius:0 2px 2px 0;transition:height 0.25s;
+}
+
+.item:hover{
+  background:white;
+  box-shadow:0 4px 20px var(--shadow);
+  transform:translateX(4px);
+}
+
+.item:hover::before{height:60%}
+
+.item.active{
+  background:white;
+  border-color:var(--gold);
+  box-shadow:0 4px 24px rgba(201,169,110,0.15);
+}
+
+.item.active::before{height:70%}
+
+.chapter-label{
+  font-size:11px;font-weight:700;color:var(--sage);
+  text-transform:uppercase;letter-spacing:1.5px;
+  min-width:28px;
+}
+
+.item-num{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;color:var(--ink-light);
+  flex-shrink:0;
+  font-family:'Cormorant Garamond',serif;
+  transition:all 0.25s;
+}
+
+.item.active .chapter-label{color:var(--gold)}
+
+.item.active .item-num{
+  background:var(--deep);color:var(--gold);
+}
+
+.item-content{flex:1;min-width:0}
+
+.item-name{
+  font-size:16px;font-weight:600;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:color 0.2s;
+}
+
+.item:hover .item-name{color:var(--forest)}
+
+.item-meta{
+  font-size:12px;color:var(--ink-light);margin-top:2px;
+  display:flex;align-items:center;gap:8px;
+}
+
+.item-meta .dot{
+  width:3px;height:3px;border-radius:50%;background:var(--border);
+}
+
+.item-actions{
+  display:flex;gap:6px;flex-shrink:0;opacity:0;
+  transition:opacity 0.2s;
+}
+
+.item:hover .item-actions,.item.active .item-actions{opacity:1}
+
+.act-btn{
+  border:none;border-radius:8px;
+  padding:7px 12px;font-size:12px;
+  cursor:pointer;display:flex;align-items:center;gap:4px;
+  transition:all 0.2s;text-decoration:none;
+  font-family:inherit;font-weight:500;
+}
+
+.act-play{
+  background:var(--deep);color:var(--cream);
+}
+.act-play:hover{background:var(--sage)}
+.act-play.playing{background:#8b3a3a;color:var(--cream)}
+
+.act-text{
+  background:transparent;color:var(--sage);
+  border:1px solid var(--sage);
+}
+.act-text:hover{background:var(--sage);color:white}
+.act-text.disabled{opacity:0.35;cursor:default;border-color:var(--border);color:var(--ink-light)}
+
+.act-dl{
+  background:transparent;color:var(--ink-light);
+  border:1px solid var(--border);
+}
+.act-dl:hover{border-color:var(--ink-light);color:var(--ink)}
+
+/* ── 弹窗 ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(26,47,35,0.7);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  z-index:200;justify-content:center;align-items:center;
+  padding:20px;
+}
+.modal-overlay.show{display:flex}
+
+.modal{
+  background:var(--parchment);
+  border-radius:16px;width:100%;max-width:780px;max-height:85vh;
+  display:flex;flex-direction:column;
+  box-shadow:0 24px 80px rgba(0,0,0,0.3);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 24px;
+  border-bottom:1px solid var(--border);
+  background:var(--cream);
+}
+
+.modal-title{
+  font-size:18px;font-weight:700;color:var(--deep);
+  flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+.modal-actions{display:flex;gap:8px;margin-left:12px}
+
+.modal-btn{
+  border:none;border-radius:8px;padding:8px 16px;
+  font-size:13px;cursor:pointer;text-decoration:none;
+  font-family:inherit;font-weight:500;transition:all 0.2s;
+}
+
+.modal-close{background:var(--border);color:var(--ink)}
+.modal-close:hover{background:#c4b9a4}
+
+.modal-download{background:var(--deep);color:var(--cream)}
+.modal-download:hover{background:var(--sage)}
+
+.modal-body{
+  padding:28px 32px;overflow-y:auto;flex:1;
+  font-size:15px;line-height:2.1;
+  white-space:pre-wrap;word-break:break-word;
+  color:var(--ink);
+}
+
+.modal-body.loading-text{text-align:center;color:var(--ink-light)}
+
+/* ── 播放栏 ── */
+.player-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(250,247,240,0.96);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid var(--border);
+  padding:14px 20px 28px;
+  display:none;z-index:100;
+  box-shadow:0 -2px 24px rgba(26,47,35,0.08);
+}
+.player-bar.show{display:block}
+
+.player-inner{max-width:860px;margin:0 auto}
+
+.player-info{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.player-title{
+  font-size:14px;font-weight:700;color:var(--deep);
+  flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+.player-time{
+  font-size:12px;color:var(--ink-light);margin-left:12px;
+  white-space:nowrap;font-family:'Cormorant Garamond',monospace;
+  letter-spacing:1px;
+}
+
+.progress-wrap{margin-bottom:10px}
+
+.progress-wrap input[type=range]{
+  width:100%;height:4px;
+  -webkit-appearance:none;appearance:none;
+  background:var(--border);border-radius:2px;
+  outline:none;cursor:pointer;
+}
+
+.progress-wrap input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;
+  border-radius:50%;background:var(--gold);
+  cursor:pointer;box-shadow:0 1px 6px rgba(201,169,110,0.4);
+  transition:transform 0.15s;
+}
+
+.progress-wrap input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.3)}
+
+.player-controls{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+}
+
+.ctrl-btn{
+  background:var(--border);border:none;border-radius:50%;
+  width:42px;height:42px;font-size:18px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;color:var(--ink);
+}
+
+.ctrl-btn:hover{background:#c4b9a4;transform:scale(1.08)}
+
+.ctrl-btn.main{
+  background:var(--deep);color:var(--gold);
+  width:56px;height:56px;font-size:24px;
+  box-shadow:0 4px 16px rgba(26,47,35,0.25);
+}
+
+.ctrl-btn.main:hover{
+  background:var(--sage);box-shadow:0 6px 20px rgba(26,47,35,0.3);
+}
+
+.volume-wrap{
+  display:flex;align-items:center;gap:6px;margin-left:8px;
+}
+
+.vol-icon{font-size:18px;cursor:pointer;user-select:none;transition:transform 0.2s}
+.vol-icon:hover{transform:scale(1.2)}
+
+.volume-wrap input[type=range]{
+  width:80px;height:4px;
+  -webkit-appearance:none;appearance:none;
+  background:var(--border);border-radius:2px;
+  outline:none;cursor:pointer;
+}
+
+.volume-wrap input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:12px;height:12px;
+  border-radius:50%;background:var(--gold);cursor:pointer;
+}
+
+.vol-label{
+  font-size:11px;color:var(--ink-light);
+  min-width:26px;text-align:center;font-weight:600;
+}
+
+/* ── 页脚 ── */
+.footer{
+  text-align:center;padding:40px 20px 120px;
+  color:var(--ink-light);font-size:13px;
+  font-style:italic;
+}
+
+.footer strong{color:var(--forest);font-style:normal}
+
+/* ── 响应式 ── */
+@media(max-width:768px){
+  .header{padding:40px 20px 32px}
+  .header h1{font-size:32px;letter-spacing:4px}
+  .verse{font-size:15px}
+  .container{padding:0 12px}
+  .item{padding:14px 16px;gap:12px}
+  .item-num{width:32px;height:32px;font-size:13px}
+  .item-name{font-size:15px}
+  .item-actions{opacity:1}
+  .ctrl-btn{width:38px;height:38px;font-size:16px}
+  .ctrl-btn.main{width:50px;height:50px;font-size:22px}
+  .volume-wrap input[type=range]{width:60px}
+}
+
+@media(max-width:480px){
+  .header{padding:32px 16px 24px}
+  .header h1{font-size:26px;letter-spacing:2px}
+  .header-ornament{font-size:11px;letter-spacing:5px}
+  .verse{font-size:14px}
+  .container{padding:0 8px}
+  .item{padding:12px 12px;gap:10px;border-radius:10px}
+  .item-num{width:28px;height:28px;font-size:12px}
+  .item-name{font-size:14px}
+  .item-meta{font-size:11px}
+  .chapter-label{display:none}
+  .act-btn{padding:6px 8px;font-size:11px;border-radius:6px}
+  .item-actions{opacity:1;gap:4px}
+  .player-bar{padding:10px 12px 22px}
+  .player-controls{gap:10px}
+  .ctrl-btn{width:36px;height:36px;font-size:15px}
+  .ctrl-btn.main{width:46px;height:46px;font-size:20px}
+  .volume-wrap input[type=range]{width:50px}
+  .vol-label{font-size:10px;min-width:22px}
+  .modal{width:96%;max-height:90vh;border-radius:12px}
+  .modal-header{padding:14px 16px}
+  .modal-title{font-size:15px}
+  .modal-body{padding:16px;font-size:14px;line-height:1.9}
+  .modal-btn{padding:7px 12px;font-size:12px}
+  .footer{padding:30px 12px 110px;font-size:12px}
+}
+
+/* ── 入场动画 ── */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.item{
+  animation:fadeUp 0.4s ease both;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-ornament">The Gospel According to</div>
+  <h1>马可福音</h1>
+  <p class="verse">「神的儿子，耶稣基督福音的起头。」</p>
+  <p class="verse-ref">马可福音 1:1</p>
+</div>
+
+<div class="container">
+  <div class="loading" id="loading">加载中...</div>
+  <div class="playlist" id="playlist"></div>
+</div>
+
+<!-- 文字版弹窗 -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-actions">
+        <a class="modal-btn modal-download" id="modalDl" href="#" download>⬇ 下载</a>
+        <button class="modal-btn modal-close" onclick="closeModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="player-bar" id="playerBar">
+  <div class="player-inner">
+    <div class="player-info">
+      <div class="player-title" id="playerTitle"></div>
+      <div class="player-time" id="playerTime">0:00 / 0:00</div>
+    </div>
+    <div class="progress-wrap">
+      <input type="range" id="progress" min="0" max="100" value="0">
+    </div>
+    <div class="player-controls">
+      <button class="ctrl-btn" onclick="playPrev()" title="上一首">⏮</button>
+      <button class="ctrl-btn main" id="playPauseBtn" onclick="togglePlay()" title="播放/暂停">▶</button>
+      <button class="ctrl-btn" onclick="playNext()" title="下一首">⏭</button>
+      <div class="volume-wrap">
+        <span class="vol-icon" onclick="toggleMute()" id="volIcon">🔊</span>
+        <input type="range" id="volume" min="0" max="100" value="100" title="音量">
+        <span class="vol-label" id="volLabel">100%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  共 <strong id="total">0</strong> 个音频 · 愿神的话语成为你脚前的灯，路上的光
+</div>
+
+<script>
+let files = [];
+let transcripts = {};
+let current = -1;
+let isPlaying = false;
+const playlist = document.getElementById('playlist');
+const audio = new Audio();
+const playerBar = document.getElementById('playerBar');
+const playerTitle = document.getElementById('playerTitle');
+const playerTime = document.getElementById('playerTime');
+const progress = document.getElementById('progress');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const loading = document.getElementById('loading');
+const BASE = 'https://raw.githubusercontent.com/Sheng-2000/audio-player/main/';
+
+// 音量控制
+let isMuted = false;
+let savedVolume = 1.0;
+
+function setVolume(val) {
+  savedVolume = val / 100;
+  audio.volume = isMuted ? 0 : savedVolume;
+  const label = document.getElementById('volLabel');
+  const icon = document.getElementById('volIcon');
+  if (isMuted || val === 0) { label.textContent = '静音'; icon.textContent = '🔇'; }
+  else if (val < 50) { label.textContent = Math.round(val) + '%'; icon.textContent = '🔈'; }
+  else { label.textContent = Math.round(val) + '%'; icon.textContent = '🔊'; }
+}
+
+function toggleMute() {
+  isMuted = !isMuted;
+  audio.volume = isMuted ? 0 : savedVolume;
+  document.getElementById('volIcon').textContent = isMuted ? '🔇' : '🔊';
+  document.getElementById('volLabel').textContent = isMuted ? '静音' : Math.round(savedVolume * 100) + '%';
+}
+
+document.getElementById('volume').addEventListener('input', function() {
+  isMuted = false;
+  setVolume(this.value);
+});
+
+// 解析章节号
+function parseChapter(name) {
+  const m = name.match(/(\d+)-/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+async function loadFiles() {
+  try {
+    const res = await fetch('https://api.github.com/repos/Sheng-2000/audio-player/contents/');
+    const data = await res.json();
+    files = data
+      .filter(f => /\.(m4a|mp3)$/i.test(f.name))
+      .map(f => ({ name: f.name.replace(/\.(m4a|mp3)$/i, ''), file: f.name, size: f.size }))
+      .sort((a, b) => {
+        // 圣经概论 单独分组，放到最后
+        const aBible = a.name.startsWith('圣经概论');
+        const bBible = b.name.startsWith('圣经概论');
+        if (aBible !== bBible) return aBible ? 1 : -1;
+        return a.name.localeCompare(b.name, 'zh');
+      });
+    const transcriptDir = data.find(f => f.name === 'transcripts' && f.type === 'dir');
+    if (transcriptDir) {
+      const tRes = await fetch('https://api.github.com/repos/Sheng-2000/audio-player/contents/transcripts');
+      const tData = await tRes.json();
+      tData.forEach(f => {
+        if (f.name.endsWith('.txt')) {
+          transcripts[f.name.replace(/\.txt$/, '')] = true;
+        }
+      });
+    }
+    render();
+  } catch (e) {
+    loading.textContent = '加载失败，请刷新重试';
+    console.error(e);
+  }
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function render() {
+  loading.style.display = 'none';
+  document.getElementById('total').textContent = files.length;
+  playlist.innerHTML = '';
+  let prevBible = null; // 记录上一项是否圣经概论，用于插入分组标题
+  files.forEach((f, i) => {
+    const hasText = !!transcripts[f.name];
+    const isBible = f.name.startsWith('圣经概论');
+    let chapterLabel;
+    if (isBible) {
+      chapterLabel = '概论';
+    } else {
+      chapterLabel = `第${parseChapter(f.name)}章`;
+    }
+    if (prevBible !== isBible) {
+      const sep = document.createElement('div');
+      sep.className = 'group-separator';
+      sep.innerHTML = `<div class="group-title">${isBible ? '📜 圣经概论' : '📖 马可福音'}</div>`;
+      playlist.appendChild(sep);
+      prevBible = isBible;
+    }
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.id = 'item-' + i;
+    div.style.animationDelay = (i * 0.04) + 's';
+    div.innerHTML = `
+      <span class="chapter-label">${chapterLabel}</span>
+      <div class="item-num">${i+1}</div>
+      <div class="item-content">
+        <div class="item-name" onclick="play(${i})">${f.name}</div>
+        <div class="item-meta">
+          <span>${formatSize(f.size)}</span>
+          <span class="dot"></span>
+          <span>${hasText ? '✓ 文字稿' : '文字稿生成中'}</span>
+        </div>
+      </div>
+      <div class="item-actions">
+        <button class="act-btn act-play" id="pbtn-${i}" onclick="play(${i})">▶ 播放</button>
+        <button class="act-btn act-text ${hasText ? '' : 'disabled'}" onclick="${hasText ? `showText(${i})` : 'void(0)'}" title="${hasText ? '查看文字版' : '文字稿生成中'}">📄</button>
+        <a class="act-btn act-dl" href="${f.file}" download>⬇</a>
+      </div>`;
+    playlist.appendChild(div);
+  });
+}
+
+function showText(idx) {
+  const f = files[idx];
+  if (!transcripts[f.name]) return;
+  const overlay = document.getElementById('modalOverlay');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  const dl = document.getElementById('modalDl');
+  title.textContent = f.name;
+  body.textContent = '加载中...';
+  body.className = 'modal-body loading-text';
+  dl.href = 'transcripts/' + encodeURIComponent(f.name) + '.txt';
+  dl.download = f.name + '.txt';
+  overlay.classList.add('show');
+  fetch(BASE + 'transcripts/' + encodeURIComponent(f.name) + '.txt')
+    .then(r => r.text())
+    .then(text => { body.textContent = text; body.className = 'modal-body'; })
+    .catch(() => { body.textContent = '加载失败'; });
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+function formatTime(s) { if(isNaN(s)) return '0:00'; const m=Math.floor(s/60); return m+':'+(Math.floor(s%60)+'').padStart(2,'0'); }
+
+function play(idx) {
+  if (idx < 0 || idx >= files.length) return;
+  // 如果点击的是当前正在播放的项，切换暂停
+  if (idx === current && isPlaying) {
+    audio.pause(); isPlaying = false; updateUI(); return;
+  }
+  // 如果点击的是当前暂停的项，继续播放
+  if (idx === current && !isPlaying) {
+    audio.play(); isPlaying = true; updateUI(); return;
+  }
+  current = idx;
+  audio.src = files[idx].file;
+  audio.volume = isMuted ? 0 : savedVolume;
+  playerTitle.textContent = files[idx].name;
+  playerBar.classList.add('show');
+  audio.play().catch(e => console.warn('播放失败:', e));
+  isPlaying = true;
+  updateUI();
+}
+
+function togglePlay() {
+  if (current < 0) { play(0); return; }
+  if (isPlaying) { audio.pause(); isPlaying = false; } else { audio.play(); isPlaying = true; }
+  updateUI();
+}
+
+function updateUI() {
+  playPauseBtn.textContent = isPlaying ? '⏸' : '▶';
+  document.querySelectorAll('.item').forEach((el, i) => {
+    el.classList.toggle('active', i === current);
+    const btn = document.getElementById('pbtn-' + i);
+    if (btn) {
+      btn.textContent = (i === current && isPlaying) ? '⏸' : '▶';
+      btn.classList.toggle('playing', i === current && isPlaying);
+    }
+  });
+}
+
+function playNext() { play(current + 1); }
+function playPrev() { play(current - 1); }
+
+audio.addEventListener('ended', () => { isPlaying = false; updateUI(); if (current < files.length - 1) playNext(); });
+audio.addEventListener('timeupdate', () => {
+  if (audio.duration) {
+    progress.value = (audio.currentTime / audio.duration) * 100;
+    playerTime.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration);
+  }
+});
+audio.addEventListener('play', () => { isPlaying = true; updateUI(); });
+audio.addEventListener('pause', () => { isPlaying = false; updateUI(); });
+progress.addEventListener('input', () => { if (audio.duration) audio.currentTime = (progress.value / 100) * audio.duration; });
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+loadFiles();
+</script>
+</body>
+</html>
