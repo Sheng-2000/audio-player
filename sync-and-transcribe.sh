@@ -47,12 +47,16 @@ check_deps() {
 }
 
 # ---------- 检测新增 ----------
+# 判定标准：AUDIO_SRC 中存在、且仓库 transcripts/ 下还没有对应文字稿的音频 = 待处理新内容
 check_new_files() {
     NEW_AUDIO=()
     for f in "$AUDIO_SRC"/*.m4a "$AUDIO_SRC"/*.M4A "$AUDIO_SRC"/*.mp3 "$AUDIO_SRC"/*.MP3; do
         [[ -f "$f" ]] || continue
         local basename=$(basename "$f")
-        [[ -f "$REPO_DIR/$basename" ]] || NEW_AUDIO+=("$basename")
+        local name="${basename%.*}"
+        name="${name%.M4A}"; name="${name%.MP3}"
+        [[ -f "$TRANSCRIPTS_DIR/${name}.txt" ]] && continue
+        NEW_AUDIO+=("$basename")
     done
 }
 
@@ -85,7 +89,7 @@ compress_audio() {
         # 临时文件与最终输出（mp3 统一转成同名 .m4a）
         local base="${name%.*}"
         local ext="${name##*.}"
-        ext="${ext,,}"   # 转小写
+        ext=$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')   # 转小写（兼容 bash 3.2）
         local out_final
         if [[ "$ext" == "mp3" ]]; then
             out_final="$REPO_DIR/${base}.m4a"
@@ -94,8 +98,12 @@ compress_audio() {
         fi
         local tmp="/tmp/reenc_${base}.m4a"
 
-        # 已压缩过（m4a 输出已存在且与仓库同名）则跳过
-        if [[ -f "$out_final" && "$ext" != "mp3" ]]; then
+        # 已是目标格式（mono AAC / 24kHz / ≤52kbps）则跳过，避免重复压缩与质量二次损失
+        local sr br ch
+        sr=$("$FFPROBE" -v error -show_entries stream=sample_rate,channels,bit_rate -of default=noprint_wrappers=1 "$src" 2>/dev/null | awk -F= '/sample_rate/{s=$2} /channels/{c=$2} /bit_rate/{b=$2} END{print s, c, b}')
+        set -- $sr
+        if [[ -n "$1" && "$1" -le 24000 && "$2" -eq 1 && "${3:-0}" -le 52000 ]]; then
+            log "已是目标格式，跳过: $name (${1}Hz/${2}ch/${3}bps)"
             continue
         fi
 
